@@ -1,0 +1,24 @@
+// @ts-ignore
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "outDir": "dist",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "types": ["node"],
+    // 📌 Modifiche Qui:
+    "rootDir": ".", // Permettiamo sia la cartella `src` che file a radice (api-gateway server.ts)
+    "resolveJsonModule": true // Utile se devi importare file JSON
+  },
+  // 📌 Aggiunto il blocco 'include' per compilare server.ts
+  "include": [
+    "src/**/*", // Includi tutto ciò che è in src
+    "server.ts" // Includi esplicitamente il file server.ts nella radice
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

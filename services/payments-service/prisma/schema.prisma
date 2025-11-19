@@ -1,0 +1,35 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Expense {
+  id        String   @id @default(cuid())
+  description String?
+  amount    Int      // store cents
+  currency  String   @default("EUR")
+  paidBy    String
+  groupId   String?
+  createdAt DateTime @default(now())
+  shares    ExpenseShare[]
+}
+
+model ExpenseShare {
+  id        String  @id @default(cuid())
+  expense   Expense @relation(fields: [expenseId], references: [id])
+  expenseId String
+  userId    String
+  amount    Int
+}
+
+model Settlement {
+  id        String   @id @default(cuid())
+  fromUser  String
+  toUser    String
+  amount    Int
+  createdAt DateTime @default(now())
+}
