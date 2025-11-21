@@ -76,10 +76,36 @@ export class UsersService {
     return { user: publicUser, token };
   }
 
-  async getUser(id: string): Promise<UserPublic | null> {
+  /**
+   * Get user public view. If requesterId is the same as id, return full public info.
+   * If requesterId is provided and is an accepted friend, return full public info.
+   * Otherwise return null (or limited info) — here we choose to return null for privacy.
+   */
+  async getUser(id: string, requesterId?: string): Promise<UserPublic | null> {
     const user = await this.repo.findById(id) as User;
     if (!user) return null;
-    return toPublic(user);
+
+    // If requester is the same user, return public
+    if (requesterId && requesterId === id) return toPublic(user);
+
+    // If no requester provided, hide private info
+    if (!requesterId) return null;
+
+    // Check friendship status via FriendshipRepository (lazy load)
+    try {
+      const { FriendshipRepository } = await import('../repositories/friendship.repository');
+      const frRepo = new FriendshipRepository();
+      const friendship = await frRepo.findBetween(requesterId, id);
+      if (friendship && (friendship.status === 'ACCEPTED' || (friendship as any).status === 'ACCEPTED')) {
+        return toPublic(user);
+      }
+    } catch (e) {
+      // If friendship repo not available or error, be conservative
+      console.debug('Friendship check failed:', e);
+    }
+
+    // Not friend — do not expose private fields
+    return null;
   }
 
   async updateUser(id: string, data: UpdateUserDTO): Promise<UserPublic> {

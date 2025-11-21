@@ -3,6 +3,9 @@ import express, { Request, Response } from 'express';
 import cors from 'cors'; // Importiamo cors (lo hai nelle dependencies)
 import { PrismaClient } from '@prisma/client';
 import authRoutes from './routers/AuthRouters';
+import friendshipRoutes from './routers/FriendshipRouters';
+import groupRoutes from './routers/GroupRouters';
+import membershipRoutes from './routers/MembershipRouters';
 
 // Inizializza il client Prisma (puoi farlo qui o in un servizio DB separato)
 const prisma = new PrismaClient();
@@ -20,8 +23,14 @@ app.get('/api/users/health', (req: Request, res: Response) => {
   res.status(200).send({ message: 'Users Service is running successfully!' });
 });
 
+// Rotte legate alle amicizie e profili utenti (mount before authRoutes to avoid shadowing `/friend-requests`)
+app.use('/api/users', friendshipRoutes);
 // Caricamento delle Rotte di Autenticazione: /api/users/ + authRoutes
 app.use('/api/users', authRoutes);
+
+// Rotte per i gruppi
+app.use('/api/groups', groupRoutes);
+app.use('/api/groups', membershipRoutes);
 
 prisma.$connect()
     .then(() => console.log('Prisma connected to the DB successfully from App config.'))

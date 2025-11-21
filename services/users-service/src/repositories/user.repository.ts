@@ -42,4 +42,10 @@ export class UserRepository {
   async deleteUser(id: string): Promise<any> {
     return this.prisma.user.delete({ where: { id } });
   }
+
+  async findByNickname(nickname: string): Promise<any | null> {
+    return this.prisma.user.findUnique({ where: { nickname } });
+  }
 }
+
+export default UserRepository;

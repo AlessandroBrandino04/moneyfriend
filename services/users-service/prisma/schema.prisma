@@ -16,26 +16,50 @@ model User {
   surname       String
   passwordHash  String
   createdAt     DateTime @default(now())
+  isDeleted     Boolean  @default(false)
   createdGroups Group[]
-  memberships   Membership[]
+  memberships   Membership[]        
+  initiatedFriendships Friendship[] @relation("InitiatedFriendships")
+  receivedFriendships  Friendship[] @relation("ReceivedFriendships")
+}
+
+model Friendship{
+  id        String                @id @default(cuid())
+  user1        User               @relation("InitiatedFriendships", fields: [user1Id], references: [id], onDelete: Cascade) 
+  user1Id      String
+  user2        User               @relation("ReceivedFriendships", fields: [user2Id], references: [id], onDelete: Cascade)  
+  user2Id      String
+  status    FriendshipStatus  @default(PENDING)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  isDeleted    Boolean   @default(false)
+  @@unique([user1Id, user2Id])
+}
+
+enum FriendshipStatus {
+  PENDING   // Richiesta inviata, in attesa di risposta
+  ACCEPTED  // Amicizia confermata
+  BLOCKED   // Un utente ha bloccato l'altro
 }
 
 model Group {
   id          String      @id @default(cuid())
   name        String
   description String?
-  creator     User        @relation(fields: [creatorId], references: [id])
+  creator     User        @relation(fields: [creatorId], references: [id], onDelete: Cascade)
   creatorId   String
   createdAt   DateTime    @default(now())
+  isDeleted   Boolean     @default(false)
   memberships Membership[]
 }
 
 model Membership {
   id      String @id @default(cuid())
-  user    User   @relation(fields: [userId], references: [id])
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId  String
-  group   Group  @relation(fields: [groupId], references: [id])
+  group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
   groupId String
+  isDeleted Boolean    @default(false)
   role    String @default("member")
   @@unique([userId, groupId])
 }

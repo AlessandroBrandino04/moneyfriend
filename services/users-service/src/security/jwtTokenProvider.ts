@@ -6,7 +6,10 @@ const SECRET = process.env.JWT_SECRET || 'change_me';
 
 // Generate a JWT for a user object (expects user.id and user.email)
 export function generateToken(user: any): string {
-  const payload = { sub: user.id, email: user.email };
+  const payload = { 
+    sub: user.id, 
+    email: user.email,
+    nickname: user.nickname};
   return jwt.sign(payload, SECRET, { expiresIn: '7d' });
 }
 

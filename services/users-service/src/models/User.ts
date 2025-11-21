@@ -1,3 +1,21 @@
+export interface IUser {
+	id: string;
+	email: string;
+	nickname: string;
+	name: string;
+	surname: string;
+	passwordHash: string;
+	createdAt: string | Date;
+	isDeleted: boolean;
+
+	// Relations (optional, represented as arrays of related entity ids)
+	createdGroups?: string[];
+	memberships?: string[];
+	initiatedFriendships?: string[];
+	receivedFriendships?: string[];
+}
+
+// Note: avoid exporting the name `User` to prevent collisions with Prisma-generated types.
 /** Internal representation of a user in the system */
 export interface User {
 	id?: string;
