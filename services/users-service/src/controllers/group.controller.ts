@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import GroupService from '../services/group.service';
+import { publishNotification } from '../notifications/client';
 
 const service = new GroupService();
 
@@ -11,6 +12,11 @@ export const createGroup = async (req: Request, res: Response) => {
 
   try {
     const group = await service.createGroup(creatorId, { name, description });
+    (async () => {
+      try {
+        await publishNotification({ type: 'GROUP_CREATED', payload: { groupId: group.id, creatorId } });
+      } catch (e) { console.debug('Notify failed', e); }
+    })();
     res.status(201).json({ success: true, data: group });
   } catch (e: any) {
     res.status(400).json({ success: false, error: e.message });

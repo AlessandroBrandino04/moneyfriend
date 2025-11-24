@@ -29,9 +29,6 @@ export class UsersService {
   // --- Logica di Business ---
 
   async register(payload: CreateUserDTO): Promise<{ user: UserPublic; token: string }> {
-    
-    //stampa per debug
-    console.log('Minchia fra:', payload);
 
     if (!payload.password) throw new Error('Password is required');
 
@@ -48,6 +45,7 @@ export class UsersService {
       name: payload.name,
       surname: payload.surname,
       passwordHash: passwordHash,
+      nickname: payload.nickname,
     });
 
     // 4. Mappiamo e generiamo il token
@@ -106,6 +104,12 @@ export class UsersService {
 
     // Not friend — do not expose private fields
     return null;
+  }
+
+  async getNickname(id: string): Promise<{ id: string; nickname: string } | null> {
+    const user = await this.repo.findById(id) as any;
+    if (!user) return null;
+    return { id: user.id, nickname: user.nickname };
   }
 
   async updateUser(id: string, data: UpdateUserDTO): Promise<UserPublic> {

@@ -43,6 +43,7 @@ export interface CreateUserDTO {
 	password: string; 
 	name?: string;
 	surname?: string;
+	nickname?: string;
 }
 
 /** Payload for updating user fields */

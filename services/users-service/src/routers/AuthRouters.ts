@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { registerUser, loginUser, getUser, updateUser, deleteUser } from '../controllers/users.controller';
+import { registerUser, loginUser, getUser, updateUser, deleteUser, getNickname } from '../controllers/users.controller';
 
 const router = Router();
 
@@ -9,6 +9,8 @@ router.post('/register', registerUser);
 // Rotta per il login
 router.post('/login', loginUser);
 
+// Public nickname route (specific, placed before generic `/:id` to avoid shadowing)
+router.get('/nickname/:id', getNickname);
 router.get('/:id', getUser);
 router.put('/me', updateUser);
 router.delete('/me', deleteUser);

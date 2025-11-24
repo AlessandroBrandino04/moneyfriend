@@ -10,8 +10,8 @@ export const registerUser = async (req: Request, res: Response) => {
   console.log('Register User - Request Body:', req.body);
   console.log('Register User - Headers:', req.headers);
     try {
-      const { email, name, surname, password } = req.body;
-    const result = await service.register({ email, name, surname, password });
+      const { email, name, surname, password, nickname } = req.body;
+    const result = await service.register({ email, name, surname, password, nickname });
     // result has shape { user, token }
     res.status(201).json({ success: true, data: { user: result.user, token: result.token } });
     } catch (err: any) {
@@ -32,6 +32,17 @@ export const getUser = async (req: Request, res: Response) => {
   const user = await service.getUser(id, requesterId);
   if (!user) return res.status(404).json({ success: false, error: 'User not found' });
   res.json({ success: true, data: user });
+};
+
+export const getNickname = async (req: Request, res: Response) => {
+  const id = req.params.id;
+  try {
+    const nick = await service.getNickname(id);
+    if (!nick) return res.status(404).json({ success: false, error: 'User not found' });
+    return res.json({ success: true, data: nick });
+  } catch (err: any) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
 };
 
 export const updateUser = async (req: Request, res: Response) => {

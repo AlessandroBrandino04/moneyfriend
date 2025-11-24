@@ -19,8 +19,14 @@ export class FriendshipService {
     if (!target) throw new Error('User with that nickname not found');
     if (target.id === senderId) throw new Error('Cannot friend yourself');
 
+    //Se esiste già una richiesta di amicizia in qualsiasi stato, non crearne una nuova
+    //Se la richiesta è PENDING ed è stata inviata dall'altro utente, accetta automaticamente
+
     const existing = await this.frRepo.findBetween(senderId, target.id);
     if (existing) {
+      if (existing.status === 'PENDING' && existing.user1Id === target.id) {
+        return this.acceptRequest(existing.id, senderId);
+      }
       return existing; // already exists (could check status)
     }
 
@@ -71,6 +77,42 @@ export class FriendshipService {
       out.push(info);
     }
     return out;
+  }
+
+  /**
+   * Return friend details (nickname,email,name,surname) only if requesterId and friendId are ACCEPTED friends.
+   */
+  async getFriendDetail(requesterId: string, friendId: string) {
+    // quick sanity
+    if (!requesterId || !friendId) throw new Error('Missing identifiers');
+
+    const fr = await this.frRepo.findBetween(requesterId, friendId);
+    if (!fr || fr.status !== 'ACCEPTED') throw new Error('Not friends');
+
+    const user = await this.userRepo.findById(friendId);
+    if (!user) throw new Error('User not found');
+
+    return {
+      id: user.id,
+      nickname: (user as any).nickname,
+      email: (user as any).email,
+      name: (user as any).name,
+      surname: (user as any).surname,
+    };
+  }
+
+  /**
+   * Remove (soft-delete) a friendship record when requested by one of the participants.
+   * requesterId is the user performing the deletion, friendId is the other user id.
+   */
+  async removeFriend(requesterId: string, friendId: string) {
+    if (!requesterId || !friendId) throw new Error('Missing identifiers');
+    const fr = await this.frRepo.findBetween(requesterId, friendId);
+    if (!fr) throw new Error('Friendship not found');
+    // ensure requester is part of the friendship
+    if (fr.user1Id !== requesterId && fr.user2Id !== requesterId) throw new Error('Not authorized');
+    // soft-delete the friendship
+    return this.frRepo.softDelete(fr.id);
   }
 }
 
