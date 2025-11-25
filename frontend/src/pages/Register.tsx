@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { register } from '../api/client'
+import { register, login as loginClient, getMe } from '../api/client'
+import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
 
 export default function Register(){
@@ -10,11 +11,25 @@ export default function Register(){
   const [surname, setSurname] = useState('')
   const [error, setError] = useState<string | null>(null)
   const nav = useNavigate()
+  const { setUser } = useAuth()
 
   async function onSubmit(e: React.FormEvent){
     e.preventDefault()
     try{
       await register({ email, password, nickname })
+      // auto-login after successful registration
+      try{
+        const data = await loginClient(email, password)
+        if (data && data.token) {
+          try{
+            const me = await getMe()
+            if (me && me.user) setUser(me.user)
+          } catch {}
+          nav('/')
+          return
+        }
+      } catch {}
+      // fallback to login page
       nav('/login')
     } catch (err: any){
       setError(err?.response?.data?.error || err.message || 'Registration failed')

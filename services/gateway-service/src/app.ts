@@ -15,6 +15,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'il_tuo_segreto_jwt_fortissimo';
 
 const USERS_API_URL = 'http://users-service:5000';
 const PAYMENTS_API_URL = 'http://payments-service:6100';
+const NOTIFICATIONS_API_URL = 'http://notifications-service:6000';
 
 // Middleware
 app.use(cors());
@@ -123,6 +124,15 @@ app.use('/api/payments', createProxyMiddleware({
     },
     logLevel: 'debug',
     onProxyReq: (proxyReq: ClientRequest, req: Request, res: Response) => {
+        if (req.headers['x-user-id']) {
+            proxyReq.setHeader('x-user-id', String(req.headers['x-user-id']));
+        }
+        if (req.headers['x-user-email']) {
+            proxyReq.setHeader('x-user-email', String(req.headers['x-user-email']));
+        }
+        if (req.headers['x-user-nickname']) {
+            proxyReq.setHeader('x-user-nickname', String(req.headers['x-user-nickname']));
+        }
         try {
             if (req.body && Object.keys(req.body).length) {
                 const bodyData = JSON.stringify(req.body);
@@ -134,6 +144,47 @@ app.use('/api/payments', createProxyMiddleware({
             console.debug('Error forwarding body to payments proxyReq:', e);
         }
     },
+}));
+
+// 3. Servizio Notification: /api/notifications/*
+app.use('/api/notifications', createProxyMiddleware({
+    target: NOTIFICATIONS_API_URL,
+    changeOrigin: true,
+    pathRewrite: {
+        '^/api/notifications': '/api/notifications',
+        '^/notifications': '/api/notifications'
+    },
+    logLevel: 'debug',
+    onProxyReq: (proxyReq: ClientRequest, req: Request, res: Response) => {
+        if (req.headers['x-user-id']) {
+            proxyReq.setHeader('x-user-id', String(req.headers['x-user-id']));
+        }
+        if (req.headers['x-user-email']) {
+            proxyReq.setHeader('x-user-email', String(req.headers['x-user-email']));
+        }
+        if (req.headers['x-user-nickname']) {
+            proxyReq.setHeader('x-user-nickname', String(req.headers['x-user-nickname']));
+        }
+        try {
+            if (req.body && Object.keys(req.body).length) {
+                const bodyData = JSON.stringify(req.body);
+                proxyReq.setHeader('Content-Type', 'application/json');
+                proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+                proxyReq.write(bodyData);
+            }
+        } catch (e) {
+            console.debug('Error forwarding body to groups proxyReq:', e);
+        }
+    },
+}));
+
+// Proxy socket.io websocket requests to notifications service so the frontend
+// can connect via the gateway (ensure ws:true to forward WebSocket upgrades)
+app.use('/socket.io', createProxyMiddleware({
+    target: NOTIFICATIONS_API_URL,
+    changeOrigin: true,
+    ws: true,
+    logLevel: 'debug'
 }));
 
 

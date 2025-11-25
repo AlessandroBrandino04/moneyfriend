@@ -121,4 +121,14 @@ export class UsersService {
     await this.repo.deleteUser(id);
     return { success: true };
   }
+
+  /**
+   * Return the full public profile for the given user id (used for /me)
+   * This bypasses friendship/privacy checks because the caller is the owner.
+   */
+  async getSelf(id: string): Promise<UserPublic | null> {
+    const user = await this.repo.findById(id) as User
+    if (!user) return null
+    return toPublic(user)
+  }
 }

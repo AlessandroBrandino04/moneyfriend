@@ -1,6 +1,5 @@
 const debtRepo = require('../repositories/debt.repository');
 const groupDebtRepo = require('../repositories/groupDebt.repository');
-const { sendNotification } = require('../notifications/sendNotification');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
@@ -16,8 +15,6 @@ async function createSimpleDebt({ creditorId, debtorId, amount }) {
   const areFriends = await checkFriendship(creditorId, debtorId);
   if (!areFriends) throw new Error('Users are not friends; cannot create simple debt');
   const r = await debtRepo.upsertIncrementDebt(creditorId, debtorId, cents);
-  // notify both users
-  sendNotification('DEBT_CREATED', { creditorId, debtorId, amount: cents });
   return r;
 }
 
@@ -36,7 +33,6 @@ async function recordSplitPayment({ payerId, participants, totalAmount }) {
     const areFriends = await checkFriendship(payerId, userId);
     if (!areFriends) throw new Error(`Payer and participant ${userId} are not friends`);
     await debtRepo.upsertIncrementDebt(payerId, userId, share);
-    sendNotification('PAYMENT_RECORDED', { payerId, to: userId, amount: share, total: cents, percent });
   }
   // record settlement/history
   await prisma.settlement.create({ data: { fromUser: payerId, toUser: payerId, amount: cents } }).catch(() => {});
@@ -61,7 +57,6 @@ async function recordGroupPayment({ payerId, groupId, totalAmount, shares }) {
     const partIsMember = await checkMembership(userId, groupId);
     if (!partIsMember) throw new Error(`Participant ${userId} is not member of group ${groupId}`);
     await groupDebtRepo.upsertIncrementGroupDebt(groupId, payerId, userId, share);
-    sendNotification('GROUP_PAYMENT_RECORDED', { groupId, payerId, to: userId, amount: share, percent });
   }
   // record history settlement placeholder
   await prisma.settlement.create({ data: { fromUser: payerId, toUser: payerId, amount: cents } }).catch(() => {});

@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { UsersService } from '../services/users.service';
 import { publishUserEvent } from '../notifications/publishUserEvent';
+import { verifyToken } from '../security/jwtTokenProvider';
 
 const router = Router();
 const service = new UsersService();
@@ -43,6 +44,27 @@ export const getUser = async (req: Request, res: Response) => {
   const user = await service.getUser(id, requesterId);
   if (!user) return res.status(404).json({ success: false, error: 'User not found' });
   res.json({ success: true, data: user });
+};
+
+export const getMe = async (req: Request, res: Response) => {
+  // The API gateway already validates the JWT and injects `x-user-id`.
+  // Read the user id from the header and return the full user profile.
+  const id = req.headers['x-user-id'] as string;
+  //log
+  console.log('Get Me - x-user-id header:', id);
+  console.log('getMe - headers snapshot:', {
+    'x-user-id': req.headers['x-user-id'],
+    authorization: req.headers['authorization']
+  });
+  if (typeof id === 'string') {
+    // trim possible whitespace
+    req.headers['x-user-id'] = id.trim();
+  }
+  if (!id) return res.status(401).json({ success: false, error: 'Missing user id header' });
+
+  const user = await service.getUser(id, id);
+  if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+  return res.json({ success: true, data: { user } });
 };
 
 export const getNickname = async (req: Request, res: Response) => {

@@ -1,18 +1,27 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { login } from '../api/client'
+import { login, getMe } from '../api/client'
+import { useAuth } from '../contexts/AuthContext'
 
 export default function Login(){
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const nav = useNavigate()
+  const { setUser } = useAuth()
 
   async function onSubmit(e: React.FormEvent){
     e.preventDefault()
     try{
       const data = await login(email, password)
-      if (data && data.token) {
+      if (data && (data.token || data.user)) {
+        // refresh current user and set in context
+        try{
+          const me = await getMe()
+          // backend may return { data: user } or { user: user }
+          const u = me?.data || me?.user || null
+          if (u) setUser(u)
+        } catch {}
         nav('/')
       }
     } catch (err: any){

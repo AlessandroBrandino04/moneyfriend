@@ -41,4 +41,15 @@ export const getGroup = async (req: Request, res: Response) => {
   }
 };
 
+export const listGroups = async (req: Request, res: Response) => {
+  const requesterId = req.headers['x-user-id'] as string;
+  if (!requesterId) return res.status(401).json({ success: false, error: 'Missing user id' });
+  try {
+    const groups = await service.listForUser(requesterId);
+    res.json({ success: true, data: groups });
+  } catch (e: any) {
+    res.status(400).json({ success: false, error: e.message });
+  }
+};
+
 export default { createGroup, getGroup };

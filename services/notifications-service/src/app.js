@@ -81,12 +81,16 @@ async function startConsumer() {
   channel.consume(queueName, async (msg) => {
     if (!msg) return;
     try {
+      // debug: log raw message payload
+      try { console.debug('Notifications consumer got raw message:', msg.content.toString()) } catch (e) {}
       const payload = JSON.parse(msg.content.toString());
 
-      // Determine recipients. Expect payload to contain `userId` or `recipients` array.
+      // Determine recipients. Expect message to contain `userId` or `recipients` array.
+      // Some publishers include recipients nested under `payload.payload` (e.g. { type, payload: { recipients: [...] } }).
       let recipients = [];
       if (payload.userId) recipients = [String(payload.userId)];
       else if (Array.isArray(payload.recipients)) recipients = payload.recipients.map(String);
+      else if (payload.payload && Array.isArray(payload.payload.recipients)) recipients = payload.payload.recipients.map(String);
       else if (payload.target === 'all') recipients = null; // broadcast
 
       const notification = {
@@ -101,10 +105,15 @@ async function startConsumer() {
         // broadcast to all connected clients
         io.emit('notification', notification);
       } else {
+        if (!recipients || recipients.length === 0) {
+          console.debug('Notification received but no recipients found, message=', payload);
+        }
         // deliver to each recipient: persist via Prisma and emit to their room
         for (const userId of recipients) {
           try {
+            console.log('Persisting notification for user', userId, 'type=', notification.type);
             const saved = await notificationsRepo.saveNotification({ userId, type: notification.type, payload: notification.payload });
+            console.log('Saved notification id=', saved && saved.id ? saved.id : '<no-id>','for user', userId);
             io.to(`user:${userId}`).emit('notification', saved);
           } catch (e) {
             console.error('Failed to persist notification for user', userId, e);

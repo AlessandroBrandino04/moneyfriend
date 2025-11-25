@@ -31,7 +31,8 @@ export async function login(email: string, password: string): Promise<LoginRespo
         console.log('Login successful, token received')
      try { localStorage.setItem('mf_token', res.data.data.token) } catch {}
     }
-    return res.data
+  // return the inner payload (e.g. { token, user }) for convenience
+  return res.data?.data || res.data
 }
 
 export async function register(payload: { email: string; password: string; nickname?: string ; name?: string ; surname?: string  }) {

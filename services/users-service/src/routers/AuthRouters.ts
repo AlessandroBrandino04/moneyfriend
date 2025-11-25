@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { registerUser, loginUser, getUser, updateUser, deleteUser, getNickname } from '../controllers/users.controller';
+import { registerUser, loginUser, getUser, updateUser, deleteUser, getNickname, getMe } from '../controllers/users.controller';
 
 const router = Router();
 
@@ -11,8 +11,10 @@ router.post('/login', loginUser);
 
 // Public nickname route (specific, placed before generic `/:id` to avoid shadowing)
 router.get('/nickname/:id', getNickname);
-router.get('/:id', getUser);
+// Place the /me route before the generic '/:id' so it is not shadowed
+router.get('/me', getMe);
 router.put('/me', updateUser);
 router.delete('/me', deleteUser);
+router.get('/:id', getUser);
 
 export default router;

@@ -24,6 +24,10 @@ export class GroupService {
     const members = await this.membershipService.listMembers(groupId);
     return { group, members };
   }
+
+  async listForUser(userId: string) {
+    return this.gRepo.listForUser(userId);
+  }
 }
 
 export default GroupService;

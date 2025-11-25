@@ -11,8 +11,10 @@ async function connect() {
   if (connecting) return;
   connecting = true;
   try {
+    console.log('Notifications client connecting to RabbitMQ at', RABBITMQ_URL);
     connection = await amqp.connect(RABBITMQ_URL);
     channel = await connection.createConfirmChannel();
+    console.log('Notifications client channel created, asserting exchange', EXCHANGE);
     await channel.assertExchange(EXCHANGE, 'fanout', { durable: true });
     connection.on('error', (err) => console.error('RabbitMQ notif conn error', err));
     connection.on('close', () => { connection = null; channel = null; });
@@ -32,8 +34,14 @@ async function connect() {
 async function publishNotification(payload) {
   const ch = await connect();
   const buf = Buffer.from(JSON.stringify(payload));
-  const ok = ch.publish(EXCHANGE, '', buf, { persistent: true });
-  if (!ok) console.warn('notifications publish returned false');
+  try {
+    console.log('Publishing notification to exchange', EXCHANGE, 'payload=', payload);
+    const ok = ch.publish(EXCHANGE, '', buf, { persistent: true });
+    if (!ok) console.warn('notifications publish returned false');
+  } catch (e) {
+    console.error('Failed to publish notification', e && e.message ? e.message : e);
+    throw e;
+  }
 }
 
 module.exports = { publishNotification };
