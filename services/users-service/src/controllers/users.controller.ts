@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { UsersService } from '../services/users.service';
+import { publishUserEvent } from '../notifications/publishUserEvent';
 
 const router = Router();
 const service = new UsersService();
@@ -13,6 +14,16 @@ export const registerUser = async (req: Request, res: Response) => {
       const { email, name, surname, password, nickname } = req.body;
     const result = await service.register({ email, name, surname, password, nickname });
     // result has shape { user, token }
+    // publish user.created event to the users exchange for subscribers (payments-service etc.)
+    (async () => {
+      try {
+        const u = result.user as any;
+        const nickname = u.nickname ?? u.name ?? null;
+        await publishUserEvent('user.created', { id: u.id, nickname });
+      } catch (e) {
+        console.debug('publishUserEvent failed', e);
+      }
+    })();
     res.status(201).json({ success: true, data: { user: result.user, token: result.token } });
     } catch (err: any) {
         res.status(400).json({ success: false, error: err.message });
@@ -54,6 +65,14 @@ export const updateUser = async (req: Request, res: Response) => {
   const data = req.body;
   try {
     const updated = await service.updateUser(id, data);
+    // notify subscribers of update
+    (async () => {
+      try {
+        const upd = updated as any;
+        const nickname = upd.nickname ?? upd.name ?? null;
+        await publishUserEvent('user.updated', { id: updated.id, nickname });
+      } catch (e) { console.debug('publishUserEvent failed', e); }
+    })();
     res.json({ success: true, data: updated });
   } catch (err: any) {
     res.status(400).json({ success: false, error: err.message });

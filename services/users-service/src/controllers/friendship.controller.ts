@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import FriendshipService from '../services/friendship.service';
-import { publishNotification } from '../notifications/client';
+import { sendNotification } from '../notifications/sendNotification';
+import { publishUserEvent } from '../notifications/publishUserEvent';
 
 const service = new FriendshipService();
 
@@ -13,13 +14,11 @@ export const sendFriendRequest = async (req: Request, res: Response) => {
   try {
     const result = await service.sendRequest(senderId, nickname);
     // fire-and-forget notification
+    sendNotification('FRIEND_REQUEST', { friendshipId: result.id, from: result.user1Id, to: result.user2Id, status: result.status });
     (async () => {
       try {
-        await publishNotification({ type: 'FRIEND_REQUEST', payload: { friendshipId: result.id, from: result.user1Id, to: result.user2Id, status: result.status } });
-        console.log('Notification sent for FRIEND_REQUEST (godo)');
-      } catch (e) {
-        console.debug('Notify failed', e);
-      }
+        await publishUserEvent('friendship.created', { id: result.id, user1Id: result.user1Id, user2Id: result.user2Id, status: result.status });
+      } catch (e) { console.debug('publishUserEvent friendship.created failed', e); }
     })();
     res.status(201).json({ success: true, data: result });
   } catch (e: any) {
@@ -34,10 +33,11 @@ export const acceptFriendRequest = async (req: Request, res: Response) => {
 
   try {
     const result = await service.acceptRequest(requestId, accepterId);
+    sendNotification('FRIEND_ACCEPTED', { friendshipId: result.id, by: accepterId, status: result.status, user1: result.user1Id, user2: result.user2Id });
     (async () => {
       try {
-        await publishNotification({ type: 'FRIEND_ACCEPTED', payload: { friendshipId: result.id, by: accepterId, status: result.status, user1: result.user1Id, user2: result.user2Id } });
-      } catch (e) { console.debug('Notify failed', e); }
+        await publishUserEvent('friendship.accepted', { id: result.id, user1Id: result.user1Id, user2Id: result.user2Id, status: result.status });
+      } catch (e) { console.debug('publishUserEvent friendship.accepted failed', e); }
     })();
     res.json({ success: true, data: result });
   } catch (e: any) {
@@ -98,10 +98,11 @@ export const deleteFriend = async (req: Request, res: Response) => {
   try {
     const removed = await service.removeFriend(requesterId, friendId);
     // notify
+    sendNotification('FRIEND_REMOVED', { friendshipId: removed.id, by: requesterId, user1: removed.user1Id, user2: removed.user2Id });
     (async () => {
       try {
-        await publishNotification({ type: 'FRIEND_REMOVED', payload: { friendshipId: removed.id, by: requesterId, user1: removed.user1Id, user2: removed.user2Id } });
-      } catch (e) { console.debug('Notify failed', e); }
+        await publishUserEvent('friendship.removed', { id: removed.id, user1Id: removed.user1Id, user2Id: removed.user2Id });
+      } catch (e) { console.debug('publishUserEvent friendship.removed failed', e); }
     })();
     res.json({ success: true, data: removed });
   } catch (e: any) {

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import GroupService from '../services/group.service';
-import { publishNotification } from '../notifications/client';
+import { sendNotification } from '../notifications/sendNotification';
+import { publishUserEvent } from '../notifications/publishUserEvent';
 
 const service = new GroupService();
 
@@ -12,10 +13,14 @@ export const createGroup = async (req: Request, res: Response) => {
 
   try {
     const group = await service.createGroup(creatorId, { name, description });
+    sendNotification('GROUP_CREATED', { groupId: group.id, creatorId });
+    // publish event for other services (payments-service subscriber) to sync groups
     (async () => {
       try {
-        await publishNotification({ type: 'GROUP_CREATED', payload: { groupId: group.id, creatorId } });
-      } catch (e) { console.debug('Notify failed', e); }
+        await publishUserEvent('group.created', { id: group.id, name: group.name, creatorId });
+      } catch (e) {
+        console.debug('publishUserEvent (group.created) failed', e);
+      }
     })();
     res.status(201).json({ success: true, data: group });
   } catch (e: any) {

@@ -7,6 +7,50 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Minimal copies of users/groups to allow local sync
+model User {
+  id       String @id
+  nickname String?
+}
+
+model Group {
+  id   String @id
+  name String
+}
+
+model Membership {
+  id      String @id @default(cuid())
+  userId  String
+  groupId String
+  role    String? @default("member")
+  isDeleted Boolean @default(false)
+
+  @@unique([userId, groupId])
+}
+
+model Friendship {
+  id        String @id @default(cuid())
+  user1Id   String
+  user2Id   String
+  status    String
+  isDeleted Boolean @default(false)
+
+  @@unique([user1Id, user2Id])
+}
+
+// Payments recorded in the payments-service DB
+model Payment {
+  id          String   @id @default(uuid())
+  payerId     String
+  // list of participant ids serialized as JSON for now
+  participants Json
+  amount      Float
+  currency    String  @default("EUR")
+  description String?
+  createdAt   DateTime @default(now())
+  groupId     String?
+}
+
 model Expense {
   id        String   @id @default(cuid())
   description String?
@@ -32,4 +76,37 @@ model Settlement {
   toUser    String
   amount    Int
   createdAt DateTime @default(now())
+}
+
+// Outstanding debt between two users (single-direction)
+model Debt {
+  id         String   @id @default(cuid())
+  creditorId String
+  debtorId   String
+  amount     Int      // cents
+  currency   String   @default("EUR")
+  isSettled  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([creditorId])
+  @@index([debtorId])
+  @@unique([creditorId, debtorId])
+}
+
+// Group-level outstanding balances between two members of the same group
+model GroupDebt {
+  id         String   @id @default(cuid())
+  groupId    String
+  creditorId String
+  debtorId   String
+  amount     Int      // cents
+  currency   String   @default("EUR")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([groupId])
+  @@index([creditorId])
+  @@index([debtorId])
+  @@unique([groupId, creditorId, debtorId])
 }

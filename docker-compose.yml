@@ -57,10 +57,40 @@ services:
     environment:
       PORT: 6000
       RABBITMQ_URL: amqp://rabbitmq
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${NOTIFICATIONS_DB}
+      JWT_SECRET: ${JWT_SECRET}
     ports:
       - "6000:6000"
     depends_on:
       - rabbitmq
+
+  payments-service:
+    build: ./services/payments-service
+    restart: always
+    environment:
+      PORT: 6100
+      RABBITMQ_URL: amqp://rabbitmq
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${PAYMENTS_DB}
+      JWT_SECRET: ${JWT_SECRET}
+    ports:
+      - "6100:6100"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      - VITE_API_BASE=http://api-gateway:8000
+    ports:
+      - "5173:80"
+    depends_on:
+      - api-gateway
 
   adminer:
     image: adminer

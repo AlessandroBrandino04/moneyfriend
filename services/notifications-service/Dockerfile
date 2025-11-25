@@ -6,8 +6,12 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm install --production=false || npm install
 
-# Copy source
+# Copy prisma schema and source
+COPY prisma ./prisma
 COPY . .
+
+# Generate Prisma client
+RUN npx prisma generate
 
 EXPOSE 6000
 

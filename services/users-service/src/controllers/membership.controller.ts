@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import MembershipService from '../services/membership.service';
-import { publishNotification } from '../notifications/client';
+import { sendNotification } from '../notifications/sendNotification';
+import { publishUserEvent } from '../notifications/publishUserEvent';
 
 const service = new MembershipService();
 
@@ -11,10 +12,11 @@ export const joinGroup = async (req: Request, res: Response) => {
 
   try {
     const membership = await service.addMember(userId, groupId);
+    sendNotification('GROUP_JOIN', { groupId, userId, membershipId: membership.id });
     (async () => {
       try {
-        await publishNotification({ type: 'GROUP_JOIN', payload: { groupId, userId, membershipId: membership.id } });
-      } catch (e) { console.debug('Notify failed', e); }
+        await publishUserEvent('membership.created', { id: membership.id, userId, groupId, role: membership.role });
+      } catch (e) { console.debug('publishUserEvent membership.created failed', e); }
     })();
     res.status(201).json({ success: true, data: membership });
   } catch (e: any) {

@@ -14,7 +14,7 @@ const app = express();
 const JWT_SECRET = process.env.JWT_SECRET || 'il_tuo_segreto_jwt_fortissimo'; 
 
 const USERS_API_URL = 'http://users-service:5000';
-const PAYMENTS_API_URL = 'http://payments-service:5001'; // Assumiamo 5001
+const PAYMENTS_API_URL = 'http://payments-service:6100';
 
 // Middleware
 app.use(cors());
@@ -27,7 +27,8 @@ const authGatewayMiddleware = (req: Request, res: Response, next: NextFunction) 
     const publicRoutes = [
         '/users/register',
         '/users/login',
-        '/users/health'
+        '/users/health',
+        '/payments/health'
     ];
 
     console.log('Auth Middleware WOOOOOOO - Incoming request to:', req.path);
